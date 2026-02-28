@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  nginx:
+    build: ./nginx
+    container_name: auth-proxy
+    ports:
+      - "443:443"
+    depends_on:
+      - frontend
+      - backend
+      - keycloak
+
+  postgres:
+    image: postgres:15
+    container_name: auth-postgres
+    environment:
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: keycloak
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: auth-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: password
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  mongodb:
+    image: mongo:6
+    container_name: auth-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - "27017:27017"
+  
+  mongo-express:
+    image: mongo-express
+    container_name: auth-mongo-express
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://admin:password@mongodb:27017/
+    depends_on:
+      - mongodb
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.1
+    container_name: auth-keycloak
+    command: start-dev --import-realm
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: password
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_PORT: 8080
+      KC_PROXY_HEADERS: "xforwarded"
+      KC_HTTP_RELATIVE_PATH: "/auth"
+      KC_HOSTNAME_URL: "https://localhost/auth/"
+      KC_HOSTNAME_ADMIN_URL: "https://localhost/auth/"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./keycloak-realm.json:/opt/keycloak/data/import/realm.json
+
+  backend:
+    build: ./backend
+    container_name: auth-backend
+    environment:
+      MONGO_URL: "mongodb://admin:password@mongodb:27017"
+      KEYCLOAK_URL: "http://keycloak:8080/auth"
+    depends_on:
+      - keycloak
+      - mongodb
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    build: ./frontend
+    container_name: auth-frontend
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:
+  mongodb_data:
