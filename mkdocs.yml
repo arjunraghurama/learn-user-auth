@@ -1,27 +1,28 @@
 site_name: User Auth Documentation
 site_description: Documentation for Keycloak, React, and FastAPI Auth Setup
+site_author: Arjun 
 
-
-repo_name: arjunraghurama/k8s-HA
-repo_url: https://github.com/arjunraghurama/k8s-HA
+repo_name: arjunraghurama/learn-user-auth
+repo_url: https://github.com/arjunraghurama/learn-user-auth
 edit_uri: edit/main/docs/
 
 
 theme:
   name: material
   palette:
-    - scheme: default
-      primary: indigo
-      accent: cyan
-      toggle:
-        icon: material/brightness-4
-        name: Switch to light mode
     - scheme: slate
       primary: indigo
       accent: cyan
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
+    - scheme: default
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    
 
 nav:
   - Home: index.md
@@ -35,7 +36,7 @@ nav:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/arjunraghurama/k8s-HA
+      link: https://github.com/arjunraghurama/learn-user-auth
 
 # plugins:
 #     - search
