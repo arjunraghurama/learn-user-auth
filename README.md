@@ -6,6 +6,47 @@ The entire stack is containerized using Docker and is served securely behind an 
 
 ## Architecture
 
+```mermaid
+graph TD
+    %% Define Styles
+    classDef proxy fill:#4bc87fd9,stroke:#3bb16f,stroke-width:2px,color:white;
+    classDef frontend fill:#61dafb,stroke:#4faecc,stroke-width:2px,color:white;
+    classDef backend fill:#306998,stroke:#26557a,stroke-width:2px,color:white;
+    classDef auth fill:#e95420,stroke:#d04b1c,stroke-width:2px,color:white;
+    classDef db fill:#336791,stroke:#2a5375,stroke-width:2px,color:white;
+    classDef nosql fill:#4db33d,stroke:#3b912c,stroke-width:2px,color:white;
+
+    %% Nodes
+    User(("🧑‍💻 User Browser"))
+    
+    subgraph "Docker Compose Stack"
+        Nginx["Nginx<br/>(Reverse Proxy)"]:::proxy
+        React["React<br/>(Frontend)"]:::frontend
+        FastAPI["FastAPI<br/>(Backend API)"]:::backend
+        Keycloak["Keycloak<br/>(Identity Provider)"]:::auth
+        
+        subgraph "Data Layer"
+            PostgreSQL[("PostgreSQL<br/>(Auth DB)")]:::db
+            MongoDB[("MongoDB<br/>(App DB)")]:::nosql
+        end
+    end
+
+    %% Routing Flow
+    User -- "HTTPS" --> Nginx
+    Nginx -- "/ (Port 3000)" --> React
+    Nginx -- "/api/ (Port 8000)" --> FastAPI
+    Nginx -- "/auth/ (Port 8080)" --> Keycloak
+
+    %% Application Logic Flow
+    React -. "Login Redirect" .-> Keycloak
+    React == "API Request + JWT" ==> FastAPI
+    
+    %% Database Flow
+    Keycloak --> PostgreSQL
+    FastAPI --> MongoDB
+    FastAPI -. "Fetch JWKS" .-> Keycloak
+```
+
 *   **Reverse Proxy (Nginx):** Terminates SSL (`https://localhost`) and routes traffic to the appropriate internal services.
 *   **Identity Provider (Keycloak):** Handles user registration, login, and token issuance. Backed by PostgreSQL.
 *   **Frontend (React/Vite):** Client application that uses the `keycloak-js` adapter to manage user sessions and interact with the API.
